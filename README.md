@@ -341,7 +341,7 @@ Training Yolo v3:
   [convolutional]
   filters=21
 
-  [region]
+  [yolo]
   classes=2
   ```
 

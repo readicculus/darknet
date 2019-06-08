@@ -313,8 +313,9 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 (to train old Yolo v2 `yolov2-voc.cfg`, `yolov2-tiny-voc.cfg`, `yolo-voc.cfg`, `yolo-voc.2.0.cfg`, ... [click by the link](https://github.com/AlexeyAB/darknet/tree/47c7af1cea5bbdedf1184963355e6418cb8b1b4f#how-to-train-pascal-voc-data))
 
 Training Yolo v3:
+(All directory is related to compile target, it is `build\darknet\x64\darnet.exe` in window, and it is `./darnet` for linux, even for paths inside `obj.data` and `train.txt`. You can find some same directorys under darknet root and `build\darknet\x64`, you can clean the duplications as you wish according to your enviroment.)
 
-1. Create file `yolo-obj.cfg` with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
+1. Create file `yolo-obj.cfg` under `cfg` directory with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
 
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L3)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L4)
@@ -345,9 +346,9 @@ Training Yolo v3:
   classes=2
   ```
 
-2. Create file `obj.names` in the directory `build\darknet\x64\data\`, with objects names - each in new line
+2. Create file `obj.names` in the directory `data\`, with objects names - each in new line. 
 
-3. Create file `obj.data` in the directory `build\darknet\x64\data\`, containing (where **classes = number of objects**):
+3. Create file `obj.data` in the directory `data\`, containing (where **classes = number of objects**):
 
   ```
   classes= 2
@@ -357,7 +358,7 @@ Training Yolo v3:
   backup = backup/
   ```
 
-4. Put image-files (.jpg) of your objects in the directory `build\darknet\x64\data\obj\`
+4. Put image-files (.jpg) of your objects in the directory `data\obj\`
 
 5. You should label each object on images from your dataset. Use this visual GUI-software for marking bounded boxes of objects and generating annotation files for Yolo v2 & v3: https://github.com/AlexeyAB/Yolo_mark
 
@@ -379,7 +380,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
   1 0.420312 0.395833 0.140625 0.166667
   ```
 
-6. Create file `train.txt` in directory `build\darknet\x64\data\`, with filenames of your images, each filename in new line, with path relative to `darknet.exe`, for example containing:
+6. Create file `train.txt` in directory `data\`, with filenames of your images, each filename in new line, with path relative to `darknet.exe`, for example containing:
 
   ```
   data/obj/img1.jpg
@@ -387,7 +388,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
   data/obj/img3.jpg
   ```
 
-7. Download pre-trained weights for the convolutional layers (154 MB): https://pjreddie.com/media/files/darknet53.conv.74 and put to the directory `build\darknet\x64`
+7. Download pre-trained weights for the convolutional layers (154 MB): https://pjreddie.com/media/files/darknet53.conv.74 and put to the directory same as `darknet.exe` or `./darknet`
 
 8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74`
      
@@ -400,7 +401,7 @@ It will create `.txt`-file for each `.jpg`-image-file - in the same directory an
 
 8.1. For training with mAP (mean average precisions) calculation for each 4 Epochs (set `valid=valid.txt` or `train.txt` in `obj.data` file) and run: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet53.conv.74 -map`
 
-9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
+9. After training is complete - get result `yolo-obj_final.weights` from path `backup\`
 
  * After each 100 iterations you can stop and later start training from this point. For example, after 2000 iterations you can stop training, and later just start training using: `darknet.exe detector train data/obj.data yolo-obj.cfg backup\yolo-obj_2000.weights`
 

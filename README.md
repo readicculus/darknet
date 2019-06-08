@@ -313,6 +313,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 (to train old Yolo v2 `yolov2-voc.cfg`, `yolov2-tiny-voc.cfg`, `yolo-voc.cfg`, `yolo-voc.2.0.cfg`, ... [click by the link](https://github.com/AlexeyAB/darknet/tree/47c7af1cea5bbdedf1184963355e6418cb8b1b4f#how-to-train-pascal-voc-data))
 
 Training Yolo v3:
+
 (All directory is related to compile target, it is `build\darknet\x64\darnet.exe` in window, and it is `./darnet` for linux, even for paths inside `obj.data` and `train.txt`. You can find some same directorys under darknet root and `build\darknet\x64`, you can clean the duplications as you wish according to your enviroment.)
 
 1. Create file `yolo-obj.cfg` under directory which you clone the repository into with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:

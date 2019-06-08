@@ -315,7 +315,7 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 Training Yolo v3:
 (All directory is related to compile target, it is `build\darknet\x64\darnet.exe` in window, and it is `./darnet` for linux, even for paths inside `obj.data` and `train.txt`. You can find some same directorys under darknet root and `build\darknet\x64`, you can clean the duplications as you wish according to your enviroment.)
 
-1. Create file `yolo-obj.cfg` under `cfg` directory with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
+1. Create file `yolo-obj.cfg` under directory which you clone the repository into with the same content as in `yolov3.cfg` (or copy `yolov3.cfg` to `yolo-obj.cfg)` and:
 
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L3)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/0039fd26786ab5f71d5af725fc18b3f521e7acfd/cfg/yolov3.cfg#L4)

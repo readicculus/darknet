@@ -1137,7 +1137,7 @@ static box float_to_box_stride(float *f, int stride)
 
 image image_data_augmentation(mat_cv* mat, int w, int h,
     int pleft, int ptop, int swidth, int sheight, int flip,
-    float jitter, float dhue, float dsat, float dexp,
+    float dhue, float dsat, float dexp,
     int blur, int num_boxes, float *truth)
 {
     image out;
@@ -1206,11 +1206,23 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
         if (blur) {
             cv::Mat dst(sized.size(), sized.type());
             if(blur == 1) cv::GaussianBlur(sized, dst, cv::Size(31, 31), 0);
-            else cv::GaussianBlur(sized, dst, cv::Size((blur / 2) * 2 + 1, (blur / 2) * 2 + 1), 0);
-            cv::Rect img_rect(0, 0, sized.cols, sized.rows);
+            else {
+                int ksize = (blur / 2) * 2 + 1;
+                cv::Size kernel_size = cv::Size(ksize, ksize);
+                //cv::GaussianBlur(sized, dst, kernel_size, 0);
+                //cv::medianBlur(sized, dst, ksize);
+                cv::bilateralFilter(sized, dst, ksize, 75, 75);
+
+                // sharpen
+                //cv::Mat img_tmp;
+                //cv::GaussianBlur(dst, img_tmp, cv::Size(), 3);
+                //cv::addWeighted(dst, 1.5, img_tmp, -0.5, 0, img_tmp);
+                //dst = img_tmp;
+            }
             //std::cout << " blur num_boxes = " << num_boxes << std::endl;
 
             if (blur == 1) {
+                cv::Rect img_rect(0, 0, sized.cols, sized.rows);
                 int t;
                 for (t = 0; t < num_boxes; ++t) {
                     box b = float_to_box_stride(truth + t*(4 + 1), 1);
@@ -1236,6 +1248,14 @@ image image_data_augmentation(mat_cv* mat, int w, int h,
         out = mat_to_image(*(cv::Mat*)mat);
     }
     return out;
+}
+
+// blend two images with (alpha and beta)
+void blend_images_cv(image new_img, float alpha, image old_img, float beta)
+{
+    cv::Mat new_mat(cv::Size(new_img.w, new_img.h), CV_32FC(new_img.c), new_img.data);// , size_t step = AUTO_STEP)
+    cv::Mat old_mat(cv::Size(old_img.w, old_img.h), CV_32FC(old_img.c), old_img.data);
+    cv::addWeighted(new_mat, alpha, old_mat, beta, 0.0, new_mat);
 }
 
 // ====================================================================

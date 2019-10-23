@@ -75,7 +75,7 @@ class METADATA(Structure):
 
 
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
-#lib = CDLL("libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("/home/yuval/Documents/XNOR/sealnet/models/darknet/libdarknet.so", RTLD_GLOBAL)
 hasGPU = True
 if os.name == "nt":
     cwd = os.path.dirname(__file__)
@@ -235,10 +235,10 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     Performs the meat of the detection
     """
     #pylint: disable= C0321
-    im = load_image(image, 0, 0)
+    im = image
     if debug: print("Loaded image")
     ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
-    free_image(im)
+    #free_image(im)
     if debug: print("freed image")
     return ret
 
@@ -259,7 +259,7 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     #predict_image_letterbox(net, im)
     #letter_box = 1
     if debug: print("did prediction")
-    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
+    ##dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, letter_box)
     if debug: print("Got dets")
     num = pnum[0]
@@ -298,7 +298,7 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
+def performDetect(image=None, thresh= 0.25, configPath = "./cfg/yolov3.cfg", weightPath = "yolov3.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
 
@@ -381,17 +381,14 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             pass
     if initOnly:
         print("Initialized detector")
-        return None
-    if not os.path.exists(imagePath):
-        raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
+        return netMain
     # Do the detection
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
-    detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
+    detections = detect(netMain, metaMain, image, thresh)
     if showImage:
         try:
             from skimage import io, draw
             import numpy as np
-            image = io.imread(imagePath)
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
             for detection in detections:

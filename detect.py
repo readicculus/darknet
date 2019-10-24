@@ -5,19 +5,27 @@ from darknet import performDetect, array_to_image
 import os
 import warnings
 
+from transforms.crops import full_image_tile_crops
+from util import get_tile_images, Detection
 from utils import get_git_revisions_hash, Timer
 import pickle
 import argparse
 import numpy as np
-from darknet import lib
+from matplotlib import pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from darknet import lib, free_image
+
 parser = argparse.ArgumentParser(description='Process images for new dataset')
 parser.add_argument('-c', '--config', dest='config_path', required=True)
 parser.add_argument('-data', '--data', dest='data_file', required=True)
-parser.add_argument('-t', '--thresh', dest='thresh', default=.5)
+parser.add_argument('-t', '--thresh', dest='thresh', default=.5, type=float)
 parser.add_argument('-d', '--debug',  default=False, action='store_true')
 
-dn_configs = ["/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3-tiny_3l.cfg"]
-dn_weights = ["/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_3l_best.weights"]
+dn_configs = ["/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3-tiny_3l.cfg",
+              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_2l_best.weights"]
+dn_weights = ["/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_3l_best.weights",
+              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_2l_best.weights"]
 
 args = parser.parse_args()
 DEBUG = args.debug
@@ -51,18 +59,22 @@ if not os.path.isfile(test_list):
 train_dataset = SealDataset(csv_file=train_list, root_dir='/data/raw_data/TrainingAnimals_ColorImages/')
 test_dataset = SealDataset(csv_file=test_list, root_dir='/data/raw_data/TrainingAnimals_ColorImages/')
 print("Generating %s set--------------------" % type)
+plt.ion()
 
-netMain = None
+
+
+plt_im = None
+fig = None
 for dn_config, dn_weight in zip(dn_configs, dn_weights):
 
-    netMain = performDetect("image.jpg", thresh=args.thresh, configPath=dn_config,
+    net = performDetect("image.jpg", thresh=args.thresh, configPath=dn_config,
                   weightPath=dn_weight, metaPath=args.data_file, showImage=False, makeImageOnly=False,
                   initOnly=True)  ## initialize weight
 
 
-
     timer = Timer(len(test_dataset))
     time_remaining = 0
+
     for i, hs in enumerate(test_dataset):
         if i != 0 and i % 10 == 0:
             time_remaining = timer.remains(i)
@@ -71,10 +83,36 @@ for dn_config, dn_weight in zip(dn_configs, dn_weights):
         boxes = hs["boxes"]
         image = hs["image"]
         image = np.asarray(image)
-        custom_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        custom_image = cv2.resize(custom_image,(lib.network_width(netMain), lib.network_height(netMain)), interpolation = cv2.INTER_LINEAR)
-        im, arr = array_to_image(custom_image)
-        dets = performDetect(im, thresh=args.thresh, configPath=dn_config,
-                      weightPath=dn_weight, metaPath=args.data_file, showImage=False, makeImageOnly=False,
-                      initOnly=False)  ## initialize weight
+        tiles = full_image_tile_crops(image, 416,416)
+        dets = []
+        for tile, location in tiles:
+            tile = cv2.cvtColor(tile, cv2.COLOR_BGR2RGB)
+            tile = cv2.resize(tile, (lib.network_width(net), lib.network_height(net)),
+                                      interpolation=cv2.INTER_LINEAR)
+            im, arr = array_to_image(tile)
+
+            detections = performDetect(im, thresh=args.thresh, configPath=dn_config,
+                          weightPath=dn_weight, metaPath=args.data_file, showImage=False, makeImageOnly=False,
+                          initOnly=False)  ## initialize weight
+            if len(detections) > 0:
+
+                for det in detections:
+                    new = Detection(det[2][0], det[2][1], det[2][2], det[2][3], det[0], det[1])
+                    new.shift(location[2], location[0])
+                    dets.append(new)
         print(dets)
+        for d in dets:
+            x1,x2,y1,y2 = d.x1x2y1y2()
+            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 5)
+
+        if plt_im is None:
+            fig = plt.figure()
+
+            plt_im = plt.imshow(image, cmap='gist_gray_r')
+        else:
+            plt_im.set_data(image)
+            plt_im = plt.imshow(image, cmap='gist_gray_r')
+        plt.draw()
+        plt.show()
+        plt.pause(1)
+        plt.cla()

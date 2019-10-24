@@ -1,7 +1,11 @@
+import pandas as pd
+from asyncio import sleep
+from multiprocessing.managers import BaseManager
+
 import scipy.misc
 import cv2
 from csvloader import SealDataset
-from darknet import performDetect, array_to_image
+from darknet import array_to_image, Detector
 import os
 import warnings
 
@@ -14,7 +18,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
-from darknet import lib, free_image
+import multiprocessing as mp
+from multiprocessing import Pool, Queue
 
 parser = argparse.ArgumentParser(description='Process images for new dataset')
 parser.add_argument('-c', '--config', dest='config_path', required=True)
@@ -65,16 +70,28 @@ plt.ion()
 
 plt_im = None
 fig = None
+
+def f(args):
+    a = Detector(args[0], args[1],args[2])
+    return a
+def dodet(args):
+    pass
+argsp = []
 for dn_config, dn_weight in zip(dn_configs, dn_weights):
+    argsp = argsp + [(dn_config, dn_weight,args.data_file,)]
 
-    net = performDetect("image.jpg", thresh=args.thresh, configPath=dn_config,
-                  weightPath=dn_weight, metaPath=args.data_file, showImage=False, makeImageOnly=False,
-                  initOnly=True)  ## initialize weight
+detector = Detector()
+detections = {}
+df = None
 
+for dn_config, dn_weight in zip(dn_configs, dn_weights):
+    detector.load(dn_config, dn_weight, args.data_file)
+    weights_file_base = os.path.basename(os.path.basename(dn_weight))
 
     timer = Timer(len(test_dataset))
     time_remaining = 0
-
+    if not dn_config in detections:
+        detections[dn_config] = {}
     for i, hs in enumerate(test_dataset):
         if i != 0 and i % 10 == 0:
             time_remaining = timer.remains(i)
@@ -82,37 +99,48 @@ for dn_config, dn_weight in zip(dn_configs, dn_weights):
         labels = hs["labels"]
         boxes = hs["boxes"]
         image = hs["image"]
+        filename = os.path.basename(os.path.basename(image.filename))
         image = np.asarray(image)
-        tiles = full_image_tile_crops(image, 416,416)
-        dets = []
+        tiles = full_image_tile_crops(image, detector.network_width(),detector.network_height())
+        image_dets = []
         for tile, location in tiles:
             tile = cv2.cvtColor(tile, cv2.COLOR_BGR2RGB)
-            tile = cv2.resize(tile, (lib.network_width(net), lib.network_height(net)),
-                                      interpolation=cv2.INTER_LINEAR)
+            tile = cv2.resize(tile, (detector.network_width(), detector.network_height()),
+                              interpolation=cv2.INTER_LINEAR)
+
             im, arr = array_to_image(tile)
+            ds = detector.performDetect(im, thresh=args.thresh)
 
-            detections = performDetect(im, thresh=args.thresh, configPath=dn_config,
-                          weightPath=dn_weight, metaPath=args.data_file, showImage=False, makeImageOnly=False,
-                          initOnly=False)  ## initialize weight
-            if len(detections) > 0:
+            if len(ds) > 0:
 
-                for det in detections:
+                for det in ds:
                     new = Detection(det[2][0], det[2][1], det[2][2], det[2][3], det[0], det[1])
                     new.shift(location[2], location[0])
-                    dets.append(new)
-        print(dets)
-        for d in dets:
-            x1,x2,y1,y2 = d.x1x2y1y2()
-            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 5)
-
-        if plt_im is None:
-            fig = plt.figure()
-
-            plt_im = plt.imshow(image, cmap='gist_gray_r')
+                    image_dets.append(new)
+        g= pd.DataFrame.from_records([s.to_dict(filename,weights_file_base) for s in image_dets])
+        if df is None:
+            df = g
+            g.to_csv('test.csv', sep='\t', header=True, mode='w',index=False)
         else:
-            plt_im.set_data(image)
-            plt_im = plt.imshow(image, cmap='gist_gray_r')
-        plt.draw()
-        plt.show()
-        plt.pause(1)
-        plt.cla()
+            df = df.append(g, ignore_index=True)
+            g.to_csv('test.csv', sep='\t', header=False, mode='a',index=False)
+
+
+        detections[dn_config][filename] = image_dets
+        print("%d detections in %s" % (len(image_dets), filename))
+        # print(dets)
+        # for d in dets:
+        #     x1,x2,y1,y2 = d.x1x2y1y2()
+        #     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 5)
+        #
+        # if plt_im is None:
+        #     fig = plt.figure()
+        #
+        #     plt_im = plt.imshow(image, cmap='gist_gray_r')
+        # else:
+        #     plt_im.set_data(image)
+        #     plt_im = plt.imshow(image, cmap='gist_gray_r')
+        # plt.draw()
+        # plt.show()
+        # plt.pause(1)
+        # plt.cla()

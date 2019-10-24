@@ -77,8 +77,11 @@ class Detector(object):
     def __init__(self):
         self.lib = CDLL("/home/yuval/Documents/XNOR/sealnet/models/darknet/libdarknet.so", RTLD_LOCAL)
         self.hasGPU = True
+        if self.hasGPU:
+            self.set_gpu = self.lib.cuda_set_device
+            self.set_gpu.argtypes = [c_int]
 
-        # self.lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
+            # self.lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
 
         self.lib.network_width.argtypes = [c_void_p]
         self.lib.network_width.restype = c_int
@@ -165,6 +168,7 @@ class Detector(object):
 
 
     def load(self, cfg,weights,meta):
+        self.weights = weights
         self.net = self.load_net_custom(cfg.encode("ascii"), weights.encode("ascii"), 1, 1)  # batch size = 1
         self.meta = self.load_meta(meta.encode("ascii"))
         # In Python 3, the metafile default access craps out on Windows (but not Linux)

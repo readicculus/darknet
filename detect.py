@@ -28,9 +28,13 @@ parser.add_argument('-t', '--thresh', dest='thresh', default=.5, type=float)
 parser.add_argument('-d', '--debug',  default=False, action='store_true')
 
 dn_configs = ["/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3-tiny_3l.cfg",
-              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_2l_best.weights"]
+              "/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3-tiny_2l.cfg",
+              "/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3-tiny_3l_foc_loss.cfg",
+              "/home/yuval/Documents/XNOR/sealnet/models/darknet/cfg/EO/3_class/ensemble416x416/yolov3.cfg"]
 dn_weights = ["/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_3l_best.weights",
-              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_2l_best.weights"]
+              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_2l_best.weights",
+              "/fast/generated_data/PB-S_0/backup/saved/yolov3-tiny_3l_foc_loss_best.weights",
+              "/fast/generated_data/PB-S_0/backup/saved/yolov3_best.weights"]
 
 args = parser.parse_args()
 DEBUG = args.debug
@@ -71,38 +75,39 @@ plt.ion()
 plt_im = None
 fig = None
 
-def f(args):
-    a = Detector(args[0], args[1],args[2])
-    return a
-def dodet(args):
-    pass
-argsp = []
-for dn_config, dn_weight in zip(dn_configs, dn_weights):
-    argsp = argsp + [(dn_config, dn_weight,args.data_file,)]
 
-detector = Detector()
+# detector = Detector()
 detections = {}
 df = None
-
+detectors = []
+i=0
 for dn_config, dn_weight in zip(dn_configs, dn_weights):
+    detector = Detector()
+    detector.set_gpu(i%2)
     detector.load(dn_config, dn_weight, args.data_file)
-    weights_file_base = os.path.basename(os.path.basename(dn_weight))
+    detectors.append(detector)
+    i+=1
 
-    timer = Timer(len(test_dataset))
-    time_remaining = 0
-    if not dn_config in detections:
-        detections[dn_config] = {}
-    for i, hs in enumerate(test_dataset):
-        if i != 0 and i % 10 == 0:
-            time_remaining = timer.remains(i)
-        print("%.3f%% complete, %s" % (i / len(test_dataset) * 100, time_remaining), sep='', end='\r', flush=True)
-        labels = hs["labels"]
-        boxes = hs["boxes"]
-        image = hs["image"]
-        filename = os.path.basename(os.path.basename(image.filename))
-        image = np.asarray(image)
-        tiles = full_image_tile_crops(image, detector.network_width(),detector.network_height())
-        image_dets = []
+# for dn_config, dn_weight in zip(dn_configs, dn_weights):
+#     detector.load(dn_config, dn_weight, args.data_file)
+
+timer = Timer(len(test_dataset))
+time_remaining = 0
+# if not dn_config in detections:
+#     detections[dn_config] = {}
+for i, hs in enumerate(test_dataset):
+    if i != 0 and i % 10 == 0:
+        time_remaining = timer.remains(i)
+    print("%.3f%% complete, %s" % (i / len(test_dataset) * 100, time_remaining), sep='', end='\r', flush=True)
+    labels = hs["labels"]
+    boxes = hs["boxes"]
+    image = hs["image"]
+    filename = os.path.basename(os.path.basename(image.filename))
+    image = np.asarray(image)
+    tiles = full_image_tile_crops(image, detector.network_width(),detector.network_height())
+    image_dets = []
+    for detector in detectors:
+        weights_file_base = os.path.basename(os.path.basename(detector.weights))
         for tile, location in tiles:
             tile = cv2.cvtColor(tile, cv2.COLOR_BGR2RGB)
             tile = cv2.resize(tile, (detector.network_width(), detector.network_height()),
@@ -126,21 +131,21 @@ for dn_config, dn_weight in zip(dn_configs, dn_weights):
             g.to_csv('test.csv', sep='\t', header=False, mode='a',index=False)
 
 
-        detections[dn_config][filename] = image_dets
-        print("%d detections in %s" % (len(image_dets), filename))
-        # print(dets)
-        # for d in dets:
-        #     x1,x2,y1,y2 = d.x1x2y1y2()
-        #     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 5)
-        #
-        # if plt_im is None:
-        #     fig = plt.figure()
-        #
-        #     plt_im = plt.imshow(image, cmap='gist_gray_r')
-        # else:
-        #     plt_im.set_data(image)
-        #     plt_im = plt.imshow(image, cmap='gist_gray_r')
-        # plt.draw()
-        # plt.show()
-        # plt.pause(1)
-        # plt.cla()
+    # detections[dn_config][filename] = image_dets
+    print("%d detections in %s" % (len(image_dets), filename))
+    # print(dets)
+    # for d in dets:
+    #     x1,x2,y1,y2 = d.x1x2y1y2()
+    #     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 5)
+    #
+    # if plt_im is None:
+    #     fig = plt.figure()
+    #
+    #     plt_im = plt.imshow(image, cmap='gist_gray_r')
+    # else:
+    #     plt_im.set_data(image)
+    #     plt_im = plt.imshow(image, cmap='gist_gray_r')
+    # plt.draw()
+    # plt.show()
+    # plt.pause(1)
+    # plt.cla()

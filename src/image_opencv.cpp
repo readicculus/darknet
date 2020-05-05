@@ -1072,7 +1072,7 @@ extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int 
 // ----------------------------------------
 
 extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
-    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, double time_remaining)
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, double time_remaining, eval_data *data)
 {
     try {
         cv::Mat &img = *(cv::Mat*)img_src;
@@ -1094,12 +1094,12 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
             if (iteration_old == 0)
                 cv::putText(img, accuracy_name, cv::Point(10, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
 
-	    if (iteration_old != 0){
-            	cv::line(img,
-                    cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
-                    cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
-                    CV_RGB(255, 0, 0), 1, 8, 0);
-	    }
+    	    if (iteration_old != 0){
+                	cv::line(img,
+                        cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+                        cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+                        CV_RGB(255, 0, 0), 1, 8, 0);
+    	    }
 
             sprintf(char_buff, "%2.1f%% ", precision * 100);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);

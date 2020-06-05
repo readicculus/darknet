@@ -51,6 +51,12 @@ class DataFile(object):
                 names.append(line.strip())
         return names
 
+    def get_train_images(self):
+        return open(self.f_train).read().split('\n')
+
+    def get_test_images(self):
+        return open(self.f_test).read().split('\n')
+
     def migrate(self, new_dir):
         test_valid_same = (self.f_test == self.f_valid)
         self.f_train = self.migrate_file(new_dir, self.f_train, 'train.txt')
@@ -84,6 +90,8 @@ class TrainSession(object):
         self.console_logger = logging.getLogger('ConsoleLog')
         self.console_logger.setLevel(logging.INFO)
         self.log_parser = DarknetLogParser()
+
+        self.name = name
         self.pretrained_weights_out = self.pretrained_weights_in = None
         if not all(v is None for v in [name,exp_dir,data,cfg,pretrained_weights,copy_pretrained_weights]):
             self.name = name
@@ -110,7 +118,6 @@ class TrainSession(object):
 
             copyfile(self.cfg_in, self.cfg_out)
 
-
     def get_datafile(self):
         return self.df
 
@@ -128,6 +135,7 @@ class TrainSession(object):
 
         if calc_map: arg_arr = arg_arr + ['-map']
         if clear: arg_arr = arg_arr + ['-clear']
+        arg_arr = arg_arr + ['-mAP_epochs'] + ['2']
         cmd = " ".join(arg_arr)
         from subprocess import Popen, PIPE, STDOUT
         self.log("Beginning training session:")
@@ -144,6 +152,7 @@ class TrainSession(object):
         self.logger.disabled = True
 
     def load(self, dir):
+        self.name = os.path.basename(os.path.normpath(dir))
         self.data_in = self.data_out = os.path.join(dir, 'yolo.data')
         self.output_file = os.path.join(dir, 'output.txt')
         self.cfg_in = self.cfg_out = glob.glob(os.path.join(dir,'*.cfg'))[0]
@@ -158,6 +167,9 @@ class TrainSession(object):
         self.ch = logging.StreamHandler()
         self.ch.setLevel(logging.INFO)
         self.console_logger.addHandler(self.ch)
+
+    def init_log(self):
+        pass
 
     def log(self, s):
         self.console_logger.info(s)
@@ -182,15 +194,16 @@ class Experiment(object):
 
     def load(self):
         subdirs = os.listdir(self.dir)
-        for sd in subdirs:
+        for session_name in subdirs:
             ts = TrainSession()
-            ts.load(os.path.join(self.dir, sd))
-            self.sessions[sd] = ts
+            ts.load(os.path.join(self.dir, session_name))
+            self.sessions[session_name] = ts
 
 
-    def new_session(self, data, cfg, pretrained_weights, copy_pretrained_weights=False):
+    def new_session(self, data, cfg, pretrained_weights, copy_pretrained_weights=False, name=None):
         now = datetime.now()
-        sess_name = now.strftime("%Y-%m-%d_%H-%M-%S")
-        session = TrainSession(sess_name, self.dir, data, cfg, pretrained_weights, copy_pretrained_weights)
-        self.sessions[sess_name] = session
+        if name is None:
+            name = now.strftime("%Y-%m-%d_%H-%M-%S")
+        session = TrainSession(name, self.dir, data, cfg, pretrained_weights, copy_pretrained_weights)
+        self.sessions[name] = session
         return session

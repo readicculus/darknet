@@ -2,6 +2,11 @@ import os
 
 from experiment_models import Experiment
 
+class ExperimentAnalysis():
+    def __init__(self, exp):
+        self.exp = exp
+
+
 
 def count_classes(label_list, names):
     label_ct_by_class = [0] * len(names)

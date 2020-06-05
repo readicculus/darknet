@@ -1,24 +1,40 @@
 import argparse
 
-
+from experiment_info import count_classes, print_info
 from experiment_models import Experiment
 
 
-
+# EXPERIMENT_NAME = 'yolov4_3c_608'
+EXPERIMENT_NAME = 'yolov4_3c_832'
 
 parser = argparse.ArgumentParser(description='Train darknet.')
 parser.add_argument('params', nargs='*')
 args = parser.parse_args()
-data, cfg, weights = args.params
-
-def run_existing_session():
-    exp = Experiment('/fast/experiments/', 'yolov4_3c_608')
-    exp.sessions['2020-05-04_15-54-50'].run(pretrained_weights='/fast/experiments/yolov4_3c_608/2020-05-04_15-54-50/weights/yolov4-custom_last.weights')
-
-def new_session(clear=True, copy_pretrained_weights=True):
-    exp = Experiment('/fast/experiments/', 'yolov4_3c_608')
-    session = exp.new_session(data, cfg, weights, copy_pretrained_weights=copy_pretrained_weights)
-    session.run(clear=clear)
+# data, cfg, weights = args.params
+exp = Experiment('/fast/experiments/', EXPERIMENT_NAME)
 
 
-run_existing_session()
+def continue_existing_session(session_name, weights):
+    exp.sessions[session_name].run(pretrained_weights=weights)
+
+def start_session(session_name, weights):
+    exp.sessions[session_name].run(pretrained_weights=weights, clear=True)
+
+
+def new_session(data, cfg, weights, copy_pretrained_weights=True, name=None):
+    return exp.new_session(data, cfg, weights, copy_pretrained_weights=copy_pretrained_weights, name=name)
+
+def info(name):
+    session = exp.sessions[name]
+    df = session.get_datafile()
+    names = df.get_names()
+    train_info = count_classes(df.f_train, names)
+    test_info = count_classes(df.f_test, names)
+
+    print_info(train_info, "Train Breakdown")
+    print_info(test_info, "Test Breakdown")
+
+# session = new_session(data, cfg, weights,name='base')
+# info('base')
+# start_session('base', '/fast/experiments/yolov4_3c_832/base/weights/yolov4.conv.137')
+continue_existing_session('base', '/fast/experiments/yolov4_3c_832/base/weights/yolov4-custom_last.weights')

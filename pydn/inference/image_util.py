@@ -28,6 +28,7 @@ def processImage(chip_meta):
         chips.append(dnc)
     return chips
 
+
 def draw_batch_detections(batch_detections, save_image_path):
     for batch_img_fn, batch_img_detections in batch_detections.items():
         boxes = []

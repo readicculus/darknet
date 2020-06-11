@@ -1,16 +1,13 @@
 import pandas as pd
-from asyncio import sleep
-from multiprocessing.managers import BaseManager
 
-import scipy.misc
 import cv2
 from csvloader import SealDataset
-from darknet import array_to_image, Detector
+from pydn.inference.darknet import array_to_image, Detector
 import os
 import warnings
 
 from transforms.crops import full_image_tile_crops
-from util import get_tile_images, Detection
+from util import Detection
 from utils import get_git_revisions_hash, Timer
 import pickle
 import argparse
@@ -18,8 +15,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
-import multiprocessing as mp
-from multiprocessing import Pool, Queue
 
 parser = argparse.ArgumentParser(description='Process images for new dataset')
 parser.add_argument('-c', '--config', dest='config_path', required=True)

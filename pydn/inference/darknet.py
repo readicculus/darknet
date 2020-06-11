@@ -425,13 +425,15 @@ import cv2
 import numpy as np
 def performBatchDetect(net, meta, image_list, pred_height, pred_width, c, thresh= 0.25, hier_thresh=.5, nms=.45, batch_size=3):
     net_width, net_height = (network_width(net), network_height(net))
-    img_list = []
-    for custom_image_bgr in image_list:
-        custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
-        custom_image = cv2.resize(
-            custom_image, (net_width, net_height), interpolation=cv2.INTER_NEAREST)
-        custom_image = custom_image.transpose(2, 0, 1)
-        img_list.append(custom_image)
+    img_list = image_list
+    # img_list = []
+    # for custom_image_rgb in image_list:
+    #     # custom_image = custom_image_bgr #cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
+    #     custom_image = cv2.resize(
+    #         custom_image_rgb, (net_width, net_height), interpolation=cv2.INTER_NEAREST)
+    #     # custom_image = custom_image.transpose(2, 0, 1)
+    #     # img_list.append(custom_image)
+    #     img_list.append(custom_image.transpose(2, 0, 1))
 
     arr = np.concatenate(img_list, axis=0)
     arr = np.ascontiguousarray(arr.flat, dtype=np.float32) / 255.0
@@ -464,13 +466,9 @@ def performBatchDetect(net, meta, image_list, pred_height, pred_width, c, thresh
                 box = det.bbox
                 left, top, right, bottom = map(int,(box.x - box.w / 2, box.y - box.h / 2,
                                             box.x + box.w / 2, box.y + box.h / 2))
-                boxes.append([top, left, bottom, right])
+                boxes.append([left, top, right, bottom])
                 scores.append(score)
                 classes.append(label)
-                boxColor = (int(255 * (1 - (score ** 2))), int(255 * (score ** 2)), 0)
-                # cv2.rectangle(image_list[b], (left, top),
-                #           (right, bottom), boxColor, 2)
-        # cv2.imwrite(os.path.basename(img_samples[b]),image_list[b])
 
         batch_boxes.append(boxes)
         batch_scores.append(scores)
@@ -479,6 +477,7 @@ def performBatchDetect(net, meta, image_list, pred_height, pred_width, c, thresh
     return batch_boxes, batch_scores, batch_classes    
 
 if __name__ == "__main__":
-    print(performDetect())
-    #Uncomment the following line to see batch inference working 
+    pass
+    # print(performDetect())
+    #Uncomment the following line to see batch inference working
     #print(performBatchDetect())

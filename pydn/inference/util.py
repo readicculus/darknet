@@ -52,3 +52,12 @@ def draw_batch_detections(batch_detections, save_image_path):
                           (det.box[2], det.box[3]), boxColor, 2)
         out_path = os.path.join(save_image_path, os.path.basename(batch_img_fn))
         cv2.imwrite(out_path, batch_im)
+
+# query api to get resulting chip dimensions
+def get_chip_dims_api(chip_dim, img_base, host_fmt = "http://127.0.0.1:5000/api/image_chips?w={0}&h={0}&image_name={1}"):
+    get_uri = host_fmt.format(chip_dim, img_base)
+    r = requests.get(url=get_uri)
+    if r.status_code != 200:
+        return None
+    json_res = json.loads(r.text)
+    return json_res

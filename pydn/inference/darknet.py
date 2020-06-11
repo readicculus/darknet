@@ -82,49 +82,9 @@ class METADATA(Structure):
 #lib = CDLL("/home/pjreddie/documents/darknet/libdarknet.so", RTLD_GLOBAL)
 #lib = CDLL("libdarknet.so", RTLD_GLOBAL)
 hasGPU = True
-if os.name == "nt":
-    cwd = os.path.dirname(__file__)
-    os.environ['PATH'] = cwd + ';' + os.environ['PATH']
-    winGPUdll = os.path.join(cwd, "yolo_cpp_dll.dll")
-    winNoGPUdll = os.path.join(cwd, "yolo_cpp_dll_nogpu.dll")
-    envKeys = list()
-    for k, v in os.environ.items():
-        envKeys.append(k)
-    try:
-        try:
-            tmp = os.environ["FORCE_CPU"].lower()
-            if tmp in ["1", "true", "yes", "on"]:
-                raise ValueError("ForceCPU")
-            else:
-                print("Flag value '"+tmp+"' not forcing CPU mode")
-        except KeyError:
-            # We never set the flag
-            if 'CUDA_VISIBLE_DEVICES' in envKeys:
-                if int(os.environ['CUDA_VISIBLE_DEVICES']) < 0:
-                    raise ValueError("ForceCPU")
-            try:
-                global DARKNET_FORCE_CPU
-                if DARKNET_FORCE_CPU:
-                    raise ValueError("ForceCPU")
-            except NameError:
-                pass
-            # print(os.environ.keys())
-            # print("FORCE_CPU flag undefined, proceeding with GPU")
-        if not os.path.exists(winGPUdll):
-            raise ValueError("NoDLL")
-        lib = CDLL(winGPUdll, RTLD_GLOBAL)
-    except (KeyError, ValueError):
-        hasGPU = False
-        if os.path.exists(winNoGPUdll):
-            lib = CDLL(winNoGPUdll, RTLD_GLOBAL)
-            print("Notice: CPU-only mode")
-        else:
-            # Try the other way, in case no_gpu was
-            # compile but not renamed
-            lib = CDLL(winGPUdll, RTLD_GLOBAL)
-            print("Environment variables indicated a CPU run, but we didn't find `"+winNoGPUdll+"`. Trying a GPU run anyway.")
-else:
-    lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
+
+# lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
+lib = CDLL("/home/yuval/Documents/XNOR/sealnet/models/darknet/libdarknet.so", RTLD_LOCAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -456,17 +416,14 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             print("Unable to show image: "+str(e))
     return detections
 
-def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
-    import cv2
-    import numpy as np
-    # NB! Image sizes should be the same
-    # You can change the images, yet, be sure that they have the same width and height
-    img_samples = ['data/person.jpg', 'data/person.jpg', 'data/person.jpg']
-    image_list = [cv2.imread(k) for k in img_samples]
-
-    net = load_net_custom(configPath.encode('utf-8'), weightPath.encode('utf-8'), 0, batch_size)
+def load_net_meta_batch(configPath, weightPath, metaPath, batchSize):
+    net = load_net_custom(configPath.encode('utf-8'), weightPath.encode('utf-8'), 0, batchSize)
     meta = load_meta(metaPath.encode('utf-8'))
-    pred_height, pred_width, c = image_list[0].shape
+    return net,meta
+
+import cv2
+import numpy as np
+def performBatchDetect(net, meta, image_list, pred_height, pred_width, c, thresh= 0.25, hier_thresh=.5, nms=.45, batch_size=3):
     net_width, net_height = (network_width(net), network_height(net))
     img_list = []
     for custom_image_bgr in image_list:
@@ -507,13 +464,13 @@ def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath
                 box = det.bbox
                 left, top, right, bottom = map(int,(box.x - box.w / 2, box.y - box.h / 2,
                                             box.x + box.w / 2, box.y + box.h / 2))
-                boxes.append((top, left, bottom, right))
+                boxes.append([top, left, bottom, right])
                 scores.append(score)
                 classes.append(label)
                 boxColor = (int(255 * (1 - (score ** 2))), int(255 * (score ** 2)), 0)
-                cv2.rectangle(image_list[b], (left, top),
-                          (right, bottom), boxColor, 2)
-        cv2.imwrite(os.path.basename(img_samples[b]),image_list[b])
+                # cv2.rectangle(image_list[b], (left, top),
+                #           (right, bottom), boxColor, 2)
+        # cv2.imwrite(os.path.basename(img_samples[b]),image_list[b])
 
         batch_boxes.append(boxes)
         batch_scores.append(scores)

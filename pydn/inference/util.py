@@ -1,5 +1,7 @@
 import json
 import os
+import cPickle as pickle
+
 import threading
 from threading import Thread
 import cv2
@@ -61,3 +63,7 @@ def get_chip_dims_api(chip_dim, img_base, host_fmt = "http://127.0.0.1:5000/api/
         return None
     json_res = json.loads(r.text)
     return json_res
+
+def save_dets(file, dets):
+    with open(file, 'wb') as handle:
+        pickle.dump(dets, handle)

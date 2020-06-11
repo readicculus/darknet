@@ -17,11 +17,7 @@ class Detection():
         self.classid = classid
         self.confidence = confidence
 
-class Detector(object):
-    def __init__(self, config_fn, meta_fn, weights_fn):
-        self.config_fn = config_fn
-        self.meta_fn = meta_fn
-        self.weights_fn = weights_fn
+
 
 
 class GPUInferenceBatch():

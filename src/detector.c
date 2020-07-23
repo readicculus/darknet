@@ -375,9 +375,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
-<<<<<<< HEAD
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", dont_show, mjpeg_port, avg_time, &cur_eval_data);
-=======
+
         if (net.contrastive) {
             float cur_con_acc = -1;
             for (k = 0; k < net.n; ++k)
@@ -386,7 +384,6 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             printf("  avg_contrastive_acc = %f \n", avg_contrastive_acc);
         }
         draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", avg_contrastive_acc / 100, dont_show, mjpeg_port, avg_time);
->>>>>>> upstream/master
 #endif    // OPENCV
 
         //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {

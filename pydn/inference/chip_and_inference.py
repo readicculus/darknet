@@ -1,10 +1,11 @@
 import multiprocessing
 
-import cPickle as pickle
+import pickle
 import time
 
+from pydn.inference.darknet import MultiGPUBatchDetectors
 from pydn.inference.util import *
-from pydn.inference.models import Detection, MultiGPUBatchDetectors
+from pydn.inference.models import Detection
 
 dn_config_fn = "/fast/experiments/yolov4_3c_832/base/yolov4-custom.cfg"
 dn_meta_fn = "/fast/experiments/yolov4_3c_832/base/yolo.data"
@@ -16,21 +17,21 @@ img_list = list(line for line in img_list if line and os.path.splitext(line)[1] 
 
 DRAW_DETS = False
 SAVE_IMAGE_OUT = '/data2/test/'
-DETECTIONS_PKL_LOC = '/fast/experiments/yolov4_3c_832/base/inference/kotz/kotz_fl01_fl04_fl05_detections.pkl'
+DETECTIONS_PKL_LOC = '/fast/experiments/yolov4_3c_832/base/inference/kotz/kotz_fl01_fl04_fl05_detections_2.pkl'
 if DRAW_DETS:
     print("DRAWING BOXES AND SAVING IMAGES IN %s" % SAVE_IMAGE_OUT)
 
 CHIP_DIMENSION = 832
-MIN_CHIP_BUFFER = 500
-START_IDX = 17300
+MIN_CHIP_BUFFER = 1
+START_IDX = 37400
 
 
 
 # I think we want an odd batch size number because with an even we risk never being divisible by total chips if they for some reason were to be odd
-mGPUBatchDetector = MultiGPUBatchDetectors(dn_config_fn, dn_meta_fn, dn_weight_fn, dim=CHIP_DIMENSION, gpus=[0,1], batch_sizes=[3,3],
+mGPUBatchDetector = MultiGPUBatchDetectors(dn_config_fn, dn_meta_fn, dn_weight_fn, dim=CHIP_DIMENSION, gpus=[1], batch_sizes=[1],
                                            nms_thresh=.45, hier_thresh=.5, thresh=.1)
 
-pool = multiprocessing.Pool(processes=8)
+pool = multiprocessing.Pool(processes=2)
 
 chip_queue = []
 # load existing detections if already exist
@@ -47,6 +48,7 @@ inference_time_total = 0
 load_chip_time_total = 0
 chip_meta_queue = {}
 chip_meta_queue_num_chips = 0
+last_saved = START_IDX
 for img_fn in img_list[START_IDX:]:
     num_images += 1
     if img_fn in detections and len(detections[img_fn]) > 0:
@@ -64,14 +66,16 @@ for img_fn in img_list[START_IDX:]:
     chip_meta_queue[img_fn] = json_res
     chip_meta_queue_num_chips += len(json_res)
 
-    if chip_meta_queue_num_chips > MIN_CHIP_BUFFER and chip_meta_queue_num_chips % mGPUBatchDetector.total_batch_size == 0:
+    if chip_meta_queue_num_chips >= MIN_CHIP_BUFFER and chip_meta_queue_num_chips % mGPUBatchDetector.total_batch_size == 0:
         load_chip_time_total_start = time.time()
         items = list(chip_meta_queue.items())
+        n=5
+        items = [items[i:i + n] for i in range(0, len(items), n)]
         results = pool.map(processImage, items)
         for r in results:
             chip_queue = chip_queue + r
         load_chip_time_total += time.time() - load_chip_time_total_start
-    if len(chip_queue) > MIN_CHIP_BUFFER and len(chip_queue) % mGPUBatchDetector.total_batch_size == 0:
+    if len(chip_queue) >= MIN_CHIP_BUFFER and len(chip_queue) % mGPUBatchDetector.total_batch_size == 0:
         print("Starting Batch Inference %d chips, %d images" % (len(chip_queue), len(batch_detections.items())))
         inference_time_start = time.time()
         batch_results = mGPUBatchDetector.detect(chip_queue)
@@ -120,7 +124,8 @@ for img_fn in img_list[START_IDX:]:
         print("%d/%d images complete - %d batch detections - %d total detections\n" % (num_images, total_images, total_batch_detections, total_detections))
 
         # save detections
-        if total_batch_detections > 0:
+        if total_batch_detections > 0 and num_images-last_saved >= 500:
+            last_saved=num_images
             print("Saving to %s" % DETECTIONS_PKL_LOC)
             save_dets(DETECTIONS_PKL_LOC, detections)
 
@@ -135,5 +140,5 @@ for img_fn in img_list[START_IDX:]:
 
 pool.close()
 
-save_dets(detections)
+save_dets(DETECTIONS_PKL_LOC,detections)
 print("Finished")

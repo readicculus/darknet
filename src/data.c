@@ -1106,6 +1106,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             const char *filename = random_paths[i];
 
             int flag = (c >= 3);
+            if(c == 4) flag = -1;
             mat_cv *src;
             src = load_image_mat_cv(filename, flag);
             if (src == NULL) {

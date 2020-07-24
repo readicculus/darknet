@@ -751,7 +751,10 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
 
 void save_image(image im, const char *name)
 {
-    save_image_options(im, name, JPG, 80);
+    IMTYPE f = JPG;
+  	save_image_options(im, name, f, 80);
+  	if (im.c == 4) f = PNG;
+    	save_image_options(im, name, f, 80);
 }
 
 void save_image_jpg(image p, const char *name)

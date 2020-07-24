@@ -1227,8 +1227,41 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
         // HSV augmentation
         // cv::COLOR_BGR2HSV, cv::COLOR_RGB2HSV, cv::COLOR_HSV2BGR, cv::COLOR_HSV2RGB
         if (dsat != 1 || dexp != 1 || dhue != 0) {
-            if (img.channels() >= 3)
+            if (img.channels() == 4) {
+                std::vector<cv::Mat> rgba_vec;
+                cv::split(sized, rgba_vec);  // split to 4 channels
+
+                std::vector<cv::Mat> rgb_vec = rgba_vec;
+                cv::Mat depth_mat = rgba_vec[3]; // save 4-th depth channel
+                rgb_vec.resize(3); // remove the 4-th channel (if the 4-th channel is Depth)
+
+                cv::Mat rgb;
+                cv::merge(rgb_vec, rgb); // use channel=3 RGB image as usual
+                cv::Mat hsv_src;
+                cvtColor(rgb, hsv_src, CV_BGR2HSV);    // also BGR -> RGB
+
+                std::vector<cv::Mat> hsv;
+                cv::split(hsv_src, hsv); // use channel=3 HSV image as usual
+
+                hsv[1] *= dsat; // do data augmentation
+                hsv[2] *= dexp;
+                hsv[0] += 179 * dhue;
+
+                cv::merge(hsv, hsv_src);
+                cvtColor(hsv_src, rgb, CV_HSV2RGB);    // now RGB instead of BGR
+
+                depth_mat*= dexp; // do data augmentation for the Depth channel
+
+                cv::split(rgb, rgb_vec);  // split to 3 channels
+                rgba_vec = rgb_vec;
+                rgba_vec.resize(4);
+                rgba_vec[3] = depth_mat;
+                cv::merge(rgba_vec, sized); // combine channel=4 RGBA image
+                // with data augmented all 4 channels
+            } else if (img.channels() >= 3)
             {
+                //std::cout << " here " << img.channels() << std::endl;
+
                 cv::Mat hsv_src;
                 cvtColor(sized, hsv_src, cv::COLOR_RGB2HSV);    // RGB to HSV
 
@@ -1318,6 +1351,7 @@ extern "C" image image_data_augmentation(mat_cv* mat, int w, int h,
         cerr << "OpenCV can't augment image: " << w << " x " << h << " \n";
         out = mat_to_image(*(cv::Mat*)mat);
     }
+//    std::cout << " out_channels " << out.c << std::endl;
     return out;
 }
 

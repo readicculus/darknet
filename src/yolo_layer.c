@@ -822,7 +822,7 @@ void avg_flipped_yolo(layer l)
     }
 }
 
-int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter)
+int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh, int *map, int relative, detection *dets, int letter, int layer_idx)
 {
     //printf("\n l.batch = %d, l.w = %d, l.h = %d, l.n = %d \n", l.batch, l.w, l.h, l.n);
     int i,j,n;
@@ -844,6 +844,7 @@ int get_yolo_detections(layer l, int w, int h, int netw, int neth, float thresh,
                 dets[count].bbox = get_yolo_box(predictions, l.biases, l.mask[n], box_index, col, row, l.w, l.h, netw, neth, l.w*l.h);
                 dets[count].objectness = objectness;
                 dets[count].classes = l.classes;
+                dets[count].layer = layer_idx;
                 if (l.embedding_output) {
                     get_embedding(l.embedding_output, l.w, l.h, l.n*l.embedding_size, l.embedding_size, col, row, n, 0, dets[count].embeddings);
                 }

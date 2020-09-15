@@ -139,6 +139,7 @@ cv::Mat load_image_mat(char *filename, int channels)
     if (channels == 0) flag = cv::IMREAD_COLOR;
     else if (channels == 1) flag = cv::IMREAD_GRAYSCALE;
     else if (channels == 3) flag = cv::IMREAD_COLOR;
+    else if (channels == 4) flag = cv::IMREAD_UNCHANGED;
     else {
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }

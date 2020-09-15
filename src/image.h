@@ -24,7 +24,7 @@ typedef struct {
 */
 float get_color(int c, int x, int max);
 void flip_image(image a);
-void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b);
+void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b, int c);
 void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b);
 void draw_bbox(image a, box bbox, int w, float r, float g, float b);
 void draw_label(image a, int r, int c, image label, const float *rgb);

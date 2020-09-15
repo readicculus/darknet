@@ -5,12 +5,14 @@ OPENCV=1
 AVX=0
 OPENMP=0
 LIBSO=1
-ZED_CAMERA=0 # ZED SDK 3.0 and above
-ZED_CAMERA_v2_8=0 # ZED SDK 2.X
+ZED_CAMERA=0
+ZED_CAMERA_v2_8=0
 
 # set GPU=1 and CUDNN=1 to speedup on GPU
 # set CUDNN_HALF=1 to further speedup 3 x times (Mixed-precision on Tensor Cores) GPU: Volta, Xavier, Turing and higher
 # set AVX=1 and OPENMP=1 to speedup on CPU (if error occurs then set AVX=0)
+# set ZED_CAMERA=1 to enable ZED SDK 3.0 and above
+# set ZED_CAMERA_v2_8=1 to enable ZED SDK 2.X
 
 USE_CPP=0
 DEBUG=0
@@ -23,6 +25,9 @@ ARCH= -gencode arch=compute_30,code=sm_30 \
 
 OS := $(shell uname)
 
+# Tesla A100 (GA100), DGX-A100, RTX 3080
+# ARCH= -gencode arch=compute_80,code=[sm_80,compute_80]
+
 # Tesla V100
 # ARCH= -gencode arch=compute_70,code=[sm_70,compute_70]
 
@@ -33,7 +38,7 @@ OS := $(shell uname)
 # ARCH= -gencode arch=compute_72,code=[sm_72,compute_72]
 
 # GTX 1080, GTX 1070, GTX 1060, GTX 1050, GTX 1030, Titan Xp, Tesla P40, Tesla P4
-ARCH= -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61
+# ARCH= -gencode arch=compute_61,code=sm_61 -gencode arch=compute_61,code=compute_61
 
 # GP100/Tesla P100 - DGX-1
 # ARCH= -gencode arch=compute_60,code=sm_60
@@ -92,7 +97,11 @@ COMMON+= `pkg-config --cflags opencv4 2> /dev/null || pkg-config --cflags opencv
 endif
 
 ifeq ($(OPENMP), 1)
-CFLAGS+= -fopenmp
+    ifeq ($(OS),Darwin) #MAC
+	    CFLAGS+= -Xpreprocessor -fopenmp
+	else
+		CFLAGS+= -fopenmp
+	endif
 LDFLAGS+= -lgomp
 endif
 

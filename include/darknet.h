@@ -881,7 +881,8 @@ typedef struct detection{
     float *embeddings;  // embeddings for tracking
     int embedding_size;
     float sim;
-    int track_id;    
+    int track_id;
+    int layer;
 } detection;
 
 // network.c -batch inference

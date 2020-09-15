@@ -1106,6 +1106,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             const char *filename = random_paths[i];
 
             int flag = (c >= 3);
+            if(c == 4) flag = -1;
             mat_cv *src;
             src = load_image_mat_cv(filename, flag);
             if (src == NULL) {
@@ -1575,6 +1576,9 @@ void *load_thread(void *ptr)
     if(a.exposure == 0) a.exposure = 1;
     if(a.saturation == 0) a.saturation = 1;
     if(a.aspect == 0) a.aspect = 1;
+    if (a.type != DETECTION_DATA && a.type != IMAGE_DATA){
+        printf("Loading non detection: %d\n", random_gen());
+    }
 
     if (a.type == OLD_CLASSIFICATION_DATA){
         *a.d = load_data_old(a.paths, a.n, a.m, a.labels, a.classes, a.w, a.h);

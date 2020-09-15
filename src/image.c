@@ -207,10 +207,11 @@ void draw_box_width_bw(image a, int x1, int y1, int x2, int y2, int w, float bri
     }
 }
 
-void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b)
+void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b, int c)
 {
     //normalize_image(a);
     int i;
+    int j;
     if(x1 < 0) x1 = 0;
     if(x1 >= a.w) x1 = a.w-1;
     if(x2 < 0) x2 = 0;
@@ -222,33 +223,49 @@ void draw_box(image a, int x1, int y1, int x2, int y2, float r, float g, float b
     if(y2 >= a.h) y2 = a.h-1;
 
     for(i = x1; i <= x2; ++i){
-        a.data[i + y1*a.w + 0*a.w*a.h] = r;
-        a.data[i + y2*a.w + 0*a.w*a.h] = r;
+        for (j = 0; j < c; ++j) {
+            float val = 0.0;
+            if (j==0)   val = r;
+            else if (j==1) val = g;
+            else if (j==2) val = b;
+            else if (j == 3) val = 1.0;
+            else val = -1.0;
 
-        a.data[i + y1*a.w + 1*a.w*a.h] = g;
-        a.data[i + y2*a.w + 1*a.w*a.h] = g;
+            a.data[i + y1 * a.w + j * a.w * a.h] = val;
+            a.data[i + y2 * a.w + j * a.w * a.h] = val;
+        }
 
-        a.data[i + y1*a.w + 2*a.w*a.h] = b;
-        a.data[i + y2*a.w + 2*a.w*a.h] = b;
     }
     for(i = y1; i <= y2; ++i){
-        a.data[x1 + i*a.w + 0*a.w*a.h] = r;
-        a.data[x2 + i*a.w + 0*a.w*a.h] = r;
+        for (j = 0; j < c; ++j) {
+            float val = 0.0;
+            if (j==0)   val = r;
+            else if (j==1) val = g;
+            else if (j==2) val = b;
+            else if (j == 3) val = 1.0;
+            else val = -1.0;
 
-        a.data[x1 + i*a.w + 1*a.w*a.h] = g;
-        a.data[x2 + i*a.w + 1*a.w*a.h] = g;
-
-        a.data[x1 + i*a.w + 2*a.w*a.h] = b;
-        a.data[x2 + i*a.w + 2*a.w*a.h] = b;
+            a.data[x1 + i*a.w + j*a.w*a.h] = val;
+            a.data[x2 + i*a.w + j*a.w*a.h] = val;
+        }
     }
 }
+
 
 void draw_box_width(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b)
 {
     int i;
     for(i = 0; i < w; ++i){
-        draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b);
+        draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b, 3);
     }
+}
+
+void draw_box_width_4c(image a, int x1, int y1, int x2, int y2, int w, float r, float g, float b)
+{
+  int i;
+  for(i = 0; i < w; ++i){
+	draw_box(a, x1+i, y1+i, x2-i, y2-i, r, g, b, 4);
+  }
 }
 
 void draw_bbox(image a, box bbox, int w, float r, float g, float b)
@@ -260,7 +277,7 @@ void draw_bbox(image a, box bbox, int w, float r, float g, float b)
 
     int i;
     for(i = 0; i < w; ++i){
-        draw_box(a, left+i, top+i, right-i, bot-i, r, g, b);
+        draw_box(a, left+i, top+i, right-i, bot-i, r, g, b, 3);
     }
 }
 
@@ -428,9 +445,11 @@ void draw_detections_v3(image im, detection *dets, int num, float thresh, char *
             if (im.c == 1) {
                 draw_box_width_bw(im, left, top, right, bot, width, 0.8);    // 1 channel Black-White
             }
-            else {
-                draw_box_width(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB
-            }
+            else if  (im.c == 4) {
+                draw_box_width_4c(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB
+            } else {
+			    draw_box_width(im, left, top, right, bot, width, red, green, blue); // 3 channels RGB
+			}
             if (alphabet) {
                 char labelstr[4096] = { 0 };
                 strcat(labelstr, names[selected_detections[i].best_class]);
@@ -754,7 +773,9 @@ void save_image_options(image im, const char *name, IMTYPE f, int quality)
 
 void save_image(image im, const char *name)
 {
-    save_image_options(im, name, JPG, 80);
+    IMTYPE f = JPG;
+    if (im.c == 4) f = PNG;
+  	save_image_options(im, name, f, 80);
 }
 
 void save_image_jpg(image p, const char *name)

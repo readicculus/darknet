@@ -139,6 +139,7 @@ cv::Mat load_image_mat(char *filename, int channels)
     if (channels == 0) flag = cv::IMREAD_COLOR;
     else if (channels == 1) flag = cv::IMREAD_GRAYSCALE;
     else if (channels == 3) flag = cv::IMREAD_COLOR;
+    else if (channels == 4) flag = cv::IMREAD_UNCHANGED;
     else {
         fprintf(stderr, "OpenCV can't force load with %d channels\n", channels);
     }
@@ -1088,7 +1089,11 @@ extern "C" mat_cv* draw_train_chart(char *windows_name, float max_img_loss, int 
 // ----------------------------------------
 
 extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_size, float avg_loss, float max_img_loss, int current_batch, int max_batches,
+<<<<<<< Temporary merge branch 1
     float precision, int draw_precision, char *accuracy_name, float contr_acc, int dont_show, int mjpeg_port, double time_remaining)
+=======
+    float precision, int draw_precision, char *accuracy_name, int dont_show, int mjpeg_port, double time_remaining, eval_data *data)
+>>>>>>> Temporary merge branch 2
 {
     try {
         cv::Mat &img = *(cv::Mat*)img_src;
@@ -1127,12 +1132,21 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
             if (iteration_old == 0)
                 cv::putText(img, accuracy_name, cv::Point(10, 12), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 0, 0), 1, CV_AA);
 
+<<<<<<< Temporary merge branch 1
 	        if (iteration_old != 0){
             	    cv::line(img,
                         cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
                         cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
                         CV_RGB(255, 0, 0), 1, 8, 0);
 	        }
+=======
+    	    if (iteration_old != 0){
+                	cv::line(img,
+                        cv::Point(img_offset + draw_size * (float)iteration_old / max_batches, draw_size * (1 - old_precision)),
+                        cv::Point(img_offset + draw_size * (float)current_batch / max_batches, draw_size * (1 - precision)),
+                        CV_RGB(255, 0, 0), 1, 8, 0);
+    	    }
+>>>>>>> Temporary merge branch 2
 
             sprintf(char_buff, "%2.1f%% ", precision * 100);
             cv::putText(img, char_buff, cv::Point(10, 28), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
@@ -1142,7 +1156,7 @@ extern "C" void draw_train_loss(char *windows_name, mat_cv* img_src, int img_siz
                 text_iteration_old = current_batch;
                 max_precision = std::max(max_precision, precision);
                 sprintf(char_buff, "%2.0f%% ", precision * 100);
-//                cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
+                cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 5, CV_AA);
                 cv::putText(img, char_buff, cv::Point(pt1.x - 30, draw_size * (1 - precision) + 15), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(200, 0, 0), 1, CV_AA);
             }
             old_precision = precision;
@@ -1545,4 +1559,5 @@ extern "C" void show_opencv_info()
 extern "C" int wait_key_cv(int delay) { return 0; }
 extern "C" int wait_until_press_key_cv() { return 0; }
 extern "C" void destroy_all_windows_cv() {}
+extern "C" void resize_window_cv(char const* window_name, int width, int height) {}
 #endif // OPENCV

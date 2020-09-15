@@ -35,7 +35,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.txt");
     char *valid_images = option_find_str(options, "valid", train_images);
-    char *backup_directory = option_find_str(options, "backup", "/backup/");
+    char *backup_directory = option_find_str(options, "backup", "backup");
     struct eval_data *cur_eval_data;
     network net_map;
     if (calc_map) {
@@ -376,9 +376,27 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
         if (avg_time < 0) avg_time = time_remaining;
         else avg_time = alpha_time * time_remaining + (1 -  alpha_time) * avg_time;
 #ifdef OPENCV
-        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", avg_contrastive_acc/100, dont_show, mjpeg_port, avg_time);
+        if (net.contrastive) {
+            float cur_con_acc = -1;
+            for (k = 0; k < net.n; ++k)
+                if (net.layers[k].type == CONTRASTIVE) cur_con_acc = *net.layers[k].loss;
+            if (cur_con_acc >= 0) avg_contrastive_acc = avg_contrastive_acc*0.99 + cur_con_acc * 0.01;
+            printf("  avg_contrastive_acc = %f \n", avg_contrastive_acc);
+        }
+        draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, net.max_batches, mean_average_precision, draw_precision, "mAP%", avg_contrastive_acc / 100, dont_show, mjpeg_port, avg_time);
 #endif    // OPENCV
 
+        //if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
+        //if (i % 100 == 0) {
+        if (iteration >= (iter_save + 1000) || iteration % 1000 == 0) {
+            iter_save = iteration;
+#ifdef GPU
+            if (ngpus != 1) sync_nets(nets, ngpus, 0);
+#endif
+            char buff[256];
+            sprintf(buff, "%s/%s_%d.weights", backup_directory, base, iteration);
+            save_weights(net, buff);
+        }
 
         if (iteration >= (iter_save_last + 100) || (iteration % 100 == 0 && iteration > 1)) {
             iter_save_last = iteration;
@@ -1841,6 +1859,7 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
 
             float avg_loss = get_network_cost(net);
             draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", 0, dont_show, 0, 0);
+            //#draw_train_loss(windows_name, img, img_size, avg_loss, max_img_loss, iteration, it_num, 0, 0, "mAP%", dont_show, 0, 0, NULL);
 
             float inv_loss = 1.0 / max_val_cmp(0.01, avg_loss);
             //net.learning_rate = *lr_set * inv_loss;

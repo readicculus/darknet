@@ -369,8 +369,8 @@ float train_network_datum(network net, float *x, float *y)
     backward_network(net, state);
     float error = get_network_cost(net);
     //if(((*net.seen)/net.batch)%net.subdivisions == 0) update_network(net);
-    if(*(state.net.total_bbox) > 0)
-        fprintf(stderr, " total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
+//    if(*(state.net.total_bbox) > 0)
+//        fprintf(stderr, " total_bbox = %d, rewritten_bbox = %f %% \n", *(state.net.total_bbox), 100 * (float)*(state.net.rewritten_bbox) / *(state.net.total_bbox));
     return error;
 }
 
@@ -859,7 +859,7 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
     for (j = 0; j < net->n; ++j) {
         layer l = net->layers[j];
         if (l.type == YOLO) {
-            int count = get_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets, letter);
+            int count = get_yolo_detections(l, w, h, net->w, net->h, thresh, map, relative, dets, letter, j);
             dets += count;
             if (prev_classes < 0) prev_classes = l.classes;
             else if (prev_classes != l.classes) {
@@ -880,7 +880,7 @@ void fill_network_boxes(network *net, int w, int h, float thresh, float hier, in
             get_detection_detections(l, w, h, thresh, dets);
             dets += l.w*l.h*l.n;
         }
-    }
+	}
 }
 
 void fill_network_boxes_batch(network *net, int w, int h, float thresh, float hier, int *map, int relative, detection *dets, int letter, int batch)
